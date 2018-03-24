@@ -11,6 +11,16 @@ type Lorebot struct {
 	AvailableClasses map[string]string
 }
 
+// channel + timestamp is apparently a UUID for slack
+// So when someone lore reacts, we look up the channel history,
+// find the message with that timestamp, and store it
+func (l *Lorebot) HandleLoreReact(channel string, timestamp string) {
+	// TODO: Fetch channel history
+	// TODO: Search for matching timestamp
+	// TODO: If found, add/update lore
+	// TODO: If not found, send error message
+}
+
 func (l *Lorebot) Start() {
 	api := slack.New(l.Conf.Token)
 	logger := log.New(os.Stdout, "slack-bot: ", log.Lshortfile|log.LstdFlags)
@@ -29,10 +39,11 @@ func (l *Lorebot) Start() {
 		case *slack.ConnectedEvent:
 			fmt.Println("Infos:", ev.Info)
 			fmt.Println("Connection counter:", ev.ConnectionCount)
-			// Replace C2147483705 with your Channel ID
-			// rtm.SendMessage(rtm.NewOutgoingMessage("Hello world", "C2147483705"))
 
 		case *slack.MessageEvent:
+			// TODO: If lorebot is mentioned
+			// TODO: Parse message
+			// TODO: If parsed, perform command
 			fmt.Printf("Message: %v\n", ev)
 
 		case *slack.PresenceChangeEvent:
@@ -47,6 +58,24 @@ func (l *Lorebot) Start() {
 		case *slack.InvalidAuthEvent:
 			fmt.Printf("Invalid credentials")
 			return
+
+		case *slack.ReactionAddedEvent:
+			// TODO: Test for duplicate lore
+			// TODO: If duplicate, increment score
+			// TODO: If not duplicate, add lore
+			// TODO: This doesn't give any information about the message that was reacted to?
+			if ev.Reaction == "lore" {
+				fmt.Printf("Lore detected")
+				fmt.Printf("Reaction: %s\n", ev.Reaction)
+				channel := ev.Item.Channel
+				timestamp := ev.Item.Timestamp
+				fmt.Printf("Channel: %s\n", channel)
+				fmt.Printf("timestamp: %s\n", timestamp)
+				go l.HandleLoreReact(channel, timestamp)
+
+				// fmt.Printf("Item: %v\n", msg.Data)
+				// fmt.Printf("Details: %v\n", msg)
+			}
 
 		default:
 			// Ignore other events..
