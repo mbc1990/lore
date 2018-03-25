@@ -1,14 +1,12 @@
 package main
 
 import "fmt"
-import "log"
-import "os"
 import "github.com/nlopes/slack"
 
 type Lorebot struct {
-	Conf             *Configuration
-	Pg               *PostgresClient
-	AvailableClasses map[string]string
+	Conf     *Configuration
+	Pg       *PostgresClient
+	SlackAPI *slack.Client
 }
 
 // channel + timestamp is apparently a UUID for slack
@@ -22,12 +20,7 @@ func (l *Lorebot) HandleLoreReact(channel string, timestamp string) {
 }
 
 func (l *Lorebot) Start() {
-	api := slack.New(l.Conf.Token)
-	logger := log.New(os.Stdout, "slack-bot: ", log.Lshortfile|log.LstdFlags)
-	slack.SetLogger(logger)
-	api.SetDebug(true)
-
-	rtm := api.NewRTM()
+	rtm := l.SlackAPI.NewRTM()
 	go rtm.ManageConnection()
 
 	for msg := range rtm.IncomingEvents {
@@ -89,5 +82,8 @@ func NewLorebot(conf *Configuration) *Lorebot {
 	lorebot.Conf = conf
 	lorebot.Pg = NewPostgresClient(lorebot.Conf.PGHost, lorebot.Conf.PGPort,
 		lorebot.Conf.PGUser, lorebot.Conf.PGPassword, lorebot.Conf.PGDbname)
+	lorebot.SlackAPI = slack.New(lorebot.Conf.Token)
+	lorebot.SlackAPI.SetDebug(true)
+
 	return lorebot
 }
