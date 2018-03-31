@@ -29,7 +29,34 @@ func (l *Lorebot) HandleLoreReact(channelId string, timestamp string) {
 				return
 			}
 			l.Pg.InsertLore(message.User, message.Text)
+			params := slack.PostMessageParameters{Username: "Lorebot", IconEmoji: ":lore:"}
+			go l.SlackAPI.PostMessage(channelId, "Lore added: <@"+message.User+">: "+message.Text, params)
 			break
+		}
+	}
+}
+
+func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
+	spl := strings.Split(ev.Text, " ")
+	splMsg := spl[1:]
+	cleaned := strings.Join(splMsg, " ")
+	userId := strings.Replace(spl[0], "<", "", 1)
+	userId = strings.Replace(userId, ">", "", 1)
+	userId = strings.Replace(userId, "@", "", 1)
+	channel := ev.Channel
+	if userId == l.LorebotID {
+		if cleaned == "recent" {
+			out := ""
+			recent := l.Pg.RecentLore()
+			for _, lore := range recent {
+				out += "<@" + lore.UserID + ">" + ": " + lore.Message + "\n"
+			}
+			params := slack.PostMessageParameters{Username: "Lorebot", IconEmoji: ":lore:"}
+			_, _, err := l.SlackAPI.PostMessage(channel, out, params)
+			if err != nil {
+				fmt.Printf("%s\n", err)
+				return
+			}
 		}
 	}
 }
@@ -41,43 +68,16 @@ func (l *Lorebot) Start() {
 		fmt.Print("Event Received: \n")
 		switch ev := msg.Data.(type) {
 		case *slack.MessageEvent:
-			spl := strings.Split(ev.Text, " ")
-			splMsg := spl[1:]
-			cleaned := strings.Join(splMsg, " ")
-			userId := strings.Replace(spl[0], "<", "", 1)
-			userId = strings.Replace(userId, ">", "", 1)
-			userId = strings.Replace(userId, "@", "", 1)
-			channel := ev.Channel
-			if userId == l.LorebotID {
-				if cleaned == "recent" {
-					out := ""
-					recent := l.Pg.RecentLore()
-					for _, lore := range recent {
-						info, _ := l.SlackAPI.GetUserInfo(lore.UserID)
-						fmt.Println("\nInfo", info)
-						displayName := info.Profile.DisplayName
-						out += displayName + ": " + lore.Message + "\n"
-					}
-					params := slack.PostMessageParameters{Username: "Lorebot", IconEmoji: ":lore:"}
-					_, _, err := l.SlackAPI.PostMessage(channel, out, params)
-					if err != nil {
-						fmt.Printf("%s\n", err)
-						return
-					}
-				}
-			}
-
+			go l.HandleMessage(ev)
 		case *slack.InvalidAuthEvent:
 			fmt.Printf("Invalid credentials")
 			return
-
 		case *slack.ReactionAddedEvent:
 			if ev.Reaction == "lore" {
 				channel := ev.Item.Channel
 				timestamp := ev.Item.Timestamp
 				go l.HandleLoreReact(channel, timestamp)
 			}
-
 		}
 	}
 }
