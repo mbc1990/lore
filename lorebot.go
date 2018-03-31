@@ -23,9 +23,14 @@ func (l *Lorebot) HandleLoreReact(channelId string, timestamp string) {
 	}
 	for _, message := range history.Messages {
 		if message.Timestamp == timestamp {
-			fmt.Println("adding lore for " + message.User + ": " + message.Text)
 			if l.Pg.LoreExists(message.Text, message.User) {
 				// TODO: Upvote lore
+				return
+			}
+			fmt.Println("User: " + message.User + " + lore id: " + l.LorebotID)
+			// Can't lore the lorebot
+			if message.User == "" {
+				fmt.Println("Ingoring self lore")
 				return
 			}
 			l.Pg.InsertLore(message.User, message.Text)
@@ -75,7 +80,6 @@ func (l *Lorebot) Start() {
 	// TODO: This is a race condition
 	go rtm.ManageConnection()
 	for msg := range rtm.IncomingEvents {
-		fmt.Print("Event Received: \n")
 		switch ev := msg.Data.(type) {
 		case *slack.MessageEvent:
 			go l.HandleMessage(ev)
@@ -94,7 +98,6 @@ func NewLorebot(conf *Configuration) *Lorebot {
 	lorebot.Pg = NewPostgresClient(lorebot.Conf.PGHost, lorebot.Conf.PGPort,
 		lorebot.Conf.PGUser, lorebot.Conf.PGPassword, lorebot.Conf.PGDbname)
 	lorebot.SlackAPI = slack.New(lorebot.Conf.Token)
-	lorebot.SlackAPI.SetDebug(true)
 	lorebot.LorebotID = conf.BotID
 	return lorebot
 }
