@@ -65,12 +65,13 @@ func (l *Lorebot) HandleReaction(ev *slack.ReactionAddedEvent) {
 	if ev.Reaction == "lore" {
 		channel := ev.Item.Channel
 		timestamp := ev.Item.Timestamp
-		go l.HandleLoreReact(channel, timestamp)
+		l.HandleLoreReact(channel, timestamp)
 	}
 }
 
 func (l *Lorebot) Start() {
 	rtm := l.SlackAPI.NewRTM()
+	// TODO: This is a race condition
 	go rtm.ManageConnection()
 	for msg := range rtm.IncomingEvents {
 		fmt.Print("Event Received: \n")
