@@ -45,18 +45,19 @@ func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 	userId = strings.Replace(userId, "@", "", 1)
 	channel := ev.Channel
 	if userId == l.LorebotID {
-		if cleaned == "recent" {
+		switch cleaned {
+		case "help":
+			out := "Usage: @lorebot <help | recent>"
+			params := slack.PostMessageParameters{Username: "Lorebot", IconEmoji: ":lore:"}
+			l.SlackAPI.PostMessage(channel, out, params)
+		case "recent":
 			out := ""
 			recent := l.Pg.RecentLore()
 			for _, lore := range recent {
 				out += "<@" + lore.UserID + ">" + ": " + lore.Message + "\n"
 			}
 			params := slack.PostMessageParameters{Username: "Lorebot", IconEmoji: ":lore:"}
-			_, _, err := l.SlackAPI.PostMessage(channel, out, params)
-			if err != nil {
-				fmt.Printf("%s\n", err)
-				return
-			}
+			l.SlackAPI.PostMessage(channel, out, params)
 		}
 	}
 }
