@@ -24,15 +24,11 @@ func (l *Lorebot) HandleLoreReact(channelId string, timestamp string) {
 	for _, message := range history.Messages {
 		if message.Timestamp == timestamp {
 			fmt.Println("adding lore for " + message.User + ": " + message.Text)
-			spl := strings.Split(message.Text, " ")
-			spl = spl[1:]
-			cleaned := strings.Join(spl, " ")
-			fmt.Println("Cleaned: " + cleaned)
-			if l.Pg.LoreExists(cleaned, message.User) {
+			if l.Pg.LoreExists(message.Text, message.User) {
 				// TODO: Upvote lore
 				return
 			}
-			l.Pg.InsertLore(message.User, cleaned)
+			l.Pg.InsertLore(message.User, message.Text)
 			break
 		}
 	}
@@ -44,13 +40,6 @@ func (l *Lorebot) Start() {
 	for msg := range rtm.IncomingEvents {
 		fmt.Print("Event Received: \n")
 		switch ev := msg.Data.(type) {
-		case *slack.HelloEvent:
-			// Ignore hello
-
-		case *slack.ConnectedEvent:
-			// fmt.Println("Infos:", ev.Info)
-			// fmt.Println("Connection counter:", ev.ConnectionCount)
-
 		case *slack.MessageEvent:
 			spl := strings.Split(ev.Text, " ")
 			splMsg := spl[1:]
@@ -78,17 +67,8 @@ func (l *Lorebot) Start() {
 				}
 			}
 
-		case *slack.PresenceChangeEvent:
-			// fmt.Printf("Presence Change: %v\n", ev)
-
-		case *slack.LatencyReport:
-			// fmt.Printf("Current latency: %v\n", ev.Value)
-
-		case *slack.RTMError:
-			// fmt.Printf("Error: %s\n", ev.Error())
-
 		case *slack.InvalidAuthEvent:
-			// fmt.Printf("Invalid credentials")
+			fmt.Printf("Invalid credentials")
 			return
 
 		case *slack.ReactionAddedEvent:
@@ -98,9 +78,6 @@ func (l *Lorebot) Start() {
 				go l.HandleLoreReact(channel, timestamp)
 			}
 
-		default:
-			// Ignore other events..
-			// fmt.Printf("Unexpected: %v\n", msg.Data)
 		}
 	}
 }
