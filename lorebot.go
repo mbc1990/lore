@@ -41,7 +41,6 @@ func (l *Lorebot) HandleLoreReact(channelId string, timestamp string) {
 func (l *Lorebot) Start() {
 	rtm := l.SlackAPI.NewRTM()
 	go rtm.ManageConnection()
-
 	for msg := range rtm.IncomingEvents {
 		fmt.Print("Event Received: \n")
 		switch ev := msg.Data.(type) {
@@ -61,14 +60,16 @@ func (l *Lorebot) Start() {
 			userId = strings.Replace(userId, "@", "", 1)
 			channel := ev.Channel
 			if userId == l.LorebotID {
-				fmt.Println("lorebot command: " + cleaned)
 				if cleaned == "recent" {
 					out := ""
 					recent := l.Pg.RecentLore()
-					for _, msg := range recent {
-						out += msg + "\n"
+					for _, lore := range recent {
+						info, _ := l.SlackAPI.GetUserInfo(lore.UserID)
+						fmt.Println("\nInfo", info)
+						displayName := info.Profile.DisplayName
+						out += displayName + ": " + lore.Message + "\n"
 					}
-					params := slack.PostMessageParameters{}
+					params := slack.PostMessageParameters{Username: "Lorebot", IconEmoji: ":lore:"}
 					_, _, err := l.SlackAPI.PostMessage(channel, out, params)
 					if err != nil {
 						fmt.Printf("%s\n", err)

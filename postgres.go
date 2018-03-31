@@ -29,7 +29,12 @@ func (p *PostgresClient) GetDB() *sql.DB {
 	return db
 }
 
-func (p *PostgresClient) RecentLore() []string {
+type Lore struct {
+	UserID  string
+	Message string
+}
+
+func (p *PostgresClient) RecentLore() []Lore {
 	sqlStatement := `
     SELECT user_id, message FROM lores ORDER BY timestamp_added DESC LIMIT 10`
 	rows, err := p.Db.Query(sqlStatement)
@@ -37,7 +42,7 @@ func (p *PostgresClient) RecentLore() []string {
 	if err != nil {
 		panic(err)
 	}
-	ret := make([]string, 0)
+	ret := make([]Lore, 0)
 	var (
 		userId  string
 		message string
@@ -46,7 +51,8 @@ func (p *PostgresClient) RecentLore() []string {
 		if err := rows.Scan(&userId, &message); err != nil {
 			log.Fatal(err)
 		}
-		ret = append(ret, userId+": "+message)
+		lore := Lore{UserID: userId, Message: message}
+		ret = append(ret, lore)
 
 	}
 	if err := rows.Err(); err != nil {
