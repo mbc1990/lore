@@ -1,6 +1,7 @@
 package main
 
 import "fmt"
+import "strings"
 import "github.com/nlopes/slack"
 
 type Lorebot struct {
@@ -12,11 +13,28 @@ type Lorebot struct {
 // channel + timestamp is apparently a UUID for slack
 // So when someone lore reacts, we look up the channel history,
 // find the message with that timestamp, and store it
-func (l *Lorebot) HandleLoreReact(channel string, timestamp string) {
-	// TODO: Fetch channel history
-	// TODO: Search for matching timestamp
-	// TODO: If found, add/update lore
-	// TODO: If not found, send error message
+func (l *Lorebot) HandleLoreReact(channelId string, timestamp string) {
+	params := slack.NewHistoryParameters()
+	history, err := l.SlackAPI.GetChannelHistory(channelId, params)
+	if err != nil {
+		fmt.Println("Error", err)
+		return
+	}
+	for _, message := range history.Messages {
+		if message.Timestamp == timestamp {
+			fmt.Println("adding lore for " + message.User + ": " + message.Text)
+			spl := strings.Split(message.Text, " ")
+			spl = spl[1:]
+			cleaned := strings.Join(spl, " ")
+			fmt.Println("Cleaned: " + cleaned)
+			if l.Pg.LoreExists(cleaned, message.User) {
+				// TODO: Upvote lore
+				return
+			}
+			l.Pg.InsertLore(message.User, cleaned)
+			break
+		}
+	}
 }
 
 func (l *Lorebot) Start() {
@@ -53,10 +71,6 @@ func (l *Lorebot) Start() {
 			return
 
 		case *slack.ReactionAddedEvent:
-			// TODO: Test for duplicate lore
-			// TODO: If duplicate, increment score
-			// TODO: If not duplicate, add lore
-			// TODO: This doesn't give any information about the message that was reacted to?
 			if ev.Reaction == "lore" {
 				fmt.Printf("Lore detected")
 				fmt.Printf("Reaction: %s\n", ev.Reaction)
@@ -65,9 +79,6 @@ func (l *Lorebot) Start() {
 				fmt.Printf("Channel: %s\n", channel)
 				fmt.Printf("timestamp: %s\n", timestamp)
 				go l.HandleLoreReact(channel, timestamp)
-
-				// fmt.Printf("Item: %v\n", msg.Data)
-				// fmt.Printf("Details: %v\n", msg)
 			}
 
 		default:
