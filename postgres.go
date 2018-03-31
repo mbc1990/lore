@@ -2,6 +2,7 @@ package main
 
 import "database/sql"
 import "fmt"
+import "log"
 import _ "github.com/lib/pq"
 
 type PostgresClient struct {
@@ -26,6 +27,32 @@ func (p *PostgresClient) GetDB() *sql.DB {
 		panic(err)
 	}
 	return db
+}
+
+func (p *PostgresClient) RecentLore() []string {
+	sqlStatement := `
+    SELECT user_id, message FROM lores ORDER BY timestamp_added DESC LIMIT 10`
+	rows, err := p.Db.Query(sqlStatement)
+	defer rows.Close()
+	if err != nil {
+		panic(err)
+	}
+	ret := make([]string, 0)
+	var (
+		userId  string
+		message string
+	)
+	for rows.Next() {
+		if err := rows.Scan(&userId, &message); err != nil {
+			log.Fatal(err)
+		}
+		ret = append(ret, userId+": "+message)
+
+	}
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+	return ret
 }
 
 func (p *PostgresClient) LoreExists(message string, user_id string) bool {
