@@ -36,7 +36,7 @@ type Lore struct {
 
 func (p *PostgresClient) RecentLore() []Lore {
 	sqlStatement := `
-    SELECT user_id, message FROM lores ORDER BY timestamp_added DESC LIMIT 10`
+    SELECT user_id, message FROM lores ORDER BY timestamp_added DESC LIMIT 3`
 	rows, err := p.Db.Query(sqlStatement)
 	defer rows.Close()
 	if err != nil {

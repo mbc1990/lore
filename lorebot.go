@@ -91,6 +91,6 @@ func NewLorebot(conf *Configuration) *Lorebot {
 	lorebot.SlackAPI.SetDebug(true)
 
 	// TODO: Move to conf file
-	lorebot.LorebotID = "U9VEHRJHH"
+	lorebot.LorebotID = conf.BotID
 	return lorebot
 }

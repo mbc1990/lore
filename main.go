@@ -12,6 +12,7 @@ type Configuration struct {
 	PGUser     string
 	PGPassword string
 	PGDbname   string
+	BotID      string
 }
 
 func main() {
