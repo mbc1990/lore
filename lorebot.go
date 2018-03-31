@@ -11,7 +11,7 @@ type Lorebot struct {
 	LorebotID string
 }
 
-// channel + timestamp is apparently a UUID for slack
+// channel + timestamp is a UUID for slack.
 // So when someone lore reacts, we look up the channel history,
 // find the message with that timestamp, and store it
 func (l *Lorebot) HandleLoreReact(channelId string, timestamp string) {
@@ -61,6 +61,14 @@ func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 	}
 }
 
+func (l *Lorebot) HandleReaction(ev *slack.ReactionAddedEvent) {
+	if ev.Reaction == "lore" {
+		channel := ev.Item.Channel
+		timestamp := ev.Item.Timestamp
+		go l.HandleLoreReact(channel, timestamp)
+	}
+}
+
 func (l *Lorebot) Start() {
 	rtm := l.SlackAPI.NewRTM()
 	go rtm.ManageConnection()
@@ -73,11 +81,7 @@ func (l *Lorebot) Start() {
 			fmt.Printf("Invalid credentials")
 			return
 		case *slack.ReactionAddedEvent:
-			if ev.Reaction == "lore" {
-				channel := ev.Item.Channel
-				timestamp := ev.Item.Timestamp
-				go l.HandleLoreReact(channel, timestamp)
-			}
+			go l.HandleReaction(ev)
 		}
 	}
 }
@@ -89,8 +93,6 @@ func NewLorebot(conf *Configuration) *Lorebot {
 		lorebot.Conf.PGUser, lorebot.Conf.PGPassword, lorebot.Conf.PGDbname)
 	lorebot.SlackAPI = slack.New(lorebot.Conf.Token)
 	lorebot.SlackAPI.SetDebug(true)
-
-	// TODO: Move to conf file
 	lorebot.LorebotID = conf.BotID
 	return lorebot
 }
