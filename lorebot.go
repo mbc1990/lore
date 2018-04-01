@@ -5,10 +5,23 @@ import "strings"
 import "github.com/nlopes/slack"
 
 type Lorebot struct {
-	Conf      *Configuration
-	Pg        *PostgresClient
-	SlackAPI  *slack.Client
-	LorebotID string
+	Conf         *Configuration
+	Pg           *PostgresClient
+	SlackAPI     *slack.Client
+	LorebotID    string
+	MessageQueue chan Message
+}
+
+type Message struct {
+	ChannelID string
+	Content   string
+}
+
+func (l *Lorebot) MessageWorker() {
+	params := slack.PostMessageParameters{Username: "Lorebot", IconEmoji: ":lore:"}
+	for msg := range l.MessageQueue {
+		l.SlackAPI.PostMessage(msg.ChannelID, msg.Content, params)
+	}
 }
 
 // channel + timestamp is a UUID for slack.
@@ -36,7 +49,7 @@ func (l *Lorebot) HandleLoreReact(channelId string, timestamp string) {
 			l.Pg.InsertLore(message.User, message.Text)
 			params := slack.PostMessageParameters{Username: "Lorebot", IconEmoji: ":lore:"}
 			go l.SlackAPI.PostMessage(channelId, "Lore added: <@"+message.User+">: "+message.Text, params)
-			break
+			return
 		}
 	}
 }
@@ -50,19 +63,20 @@ func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 	userId = strings.Replace(userId, "@", "", 1)
 	channel := ev.Channel
 	if userId == l.LorebotID {
+		// TODO: Parse commands + arguments
 		switch cleaned {
 		case "help":
 			out := "Usage: @lorebot <help | recent>"
-			params := slack.PostMessageParameters{Username: "Lorebot", IconEmoji: ":lore:"}
-			l.SlackAPI.PostMessage(channel, out, params)
+			msg := &Message{ChannelID: channel, Content: out}
+			l.MessageQueue <- *msg
 		case "recent":
 			out := ""
 			recent := l.Pg.RecentLore()
 			for _, lore := range recent {
 				out += "<@" + lore.UserID + ">" + ": " + lore.Message + "\n"
 			}
-			params := slack.PostMessageParameters{Username: "Lorebot", IconEmoji: ":lore:"}
-			l.SlackAPI.PostMessage(channel, out, params)
+			msg := &Message{ChannelID: channel, Content: out}
+			l.MessageQueue <- *msg
 		}
 	}
 }
@@ -76,8 +90,11 @@ func (l *Lorebot) HandleReaction(ev *slack.ReactionAddedEvent) {
 }
 
 func (l *Lorebot) Start() {
-	rtm := l.SlackAPI.NewRTM()
+
+	go l.MessageWorker()
+
 	// TODO: This is a race condition
+	rtm := l.SlackAPI.NewRTM()
 	go rtm.ManageConnection()
 	for msg := range rtm.IncomingEvents {
 		switch ev := msg.Data.(type) {
@@ -99,5 +116,6 @@ func NewLorebot(conf *Configuration) *Lorebot {
 		lorebot.Conf.PGUser, lorebot.Conf.PGPassword, lorebot.Conf.PGDbname)
 	lorebot.SlackAPI = slack.New(lorebot.Conf.Token)
 	lorebot.LorebotID = conf.BotID
+	lorebot.MessageQueue = make(chan Message, 1000)
 	return lorebot
 }
