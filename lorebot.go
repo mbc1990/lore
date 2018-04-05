@@ -1,6 +1,7 @@
 package main
 
 import "fmt"
+import "log"
 import "strings"
 import "github.com/nlopes/slack"
 
@@ -54,20 +55,26 @@ func (l *Lorebot) HandleLoreReact(channelId string, timestamp string) {
 	}
 }
 
-func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
-	spl := strings.Split(ev.Text, " ")
-	splMsg := spl[1:]
-	cleaned := strings.Join(splMsg, " ")
-	userId := strings.Replace(spl[0], "<", "", 1)
+func parseUserID(unparsed string) string {
+	userId := strings.Replace(unparsed, "<", "", 1)
 	userId = strings.Replace(userId, ">", "", 1)
 	userId = strings.Replace(userId, "@", "", 1)
+	return userId
+}
+
+func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
+	fmt.Println("event: ", ev)
 	channel := ev.Channel
+	spl := strings.Split(ev.Text, " ")
+	userId := parseUserID(spl[0])
+	cmd := spl[1]
 	if userId == l.LorebotID {
 		// TODO: Parse commands + arguments
-		switch cleaned {
+		switch cmd {
 		case "help":
 			out := "Usage: @lorebot <help | recent>"
 			msg := &Message{ChannelID: channel, Content: out}
+			fmt.Println("Trying to write message: " + out)
 			l.MessageQueue <- *msg
 		case "recent":
 			out := ""
@@ -78,6 +85,7 @@ func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 			msg := &Message{ChannelID: channel, Content: out}
 			l.MessageQueue <- *msg
 		}
+		// TODO: Default case looks up the argument as user id
 	}
 }
 
@@ -90,6 +98,7 @@ func (l *Lorebot) HandleReaction(ev *slack.ReactionAddedEvent) {
 }
 
 func (l *Lorebot) Start() {
+	fmt.Println("Starting...")
 
 	go l.MessageWorker()
 
@@ -101,8 +110,7 @@ func (l *Lorebot) Start() {
 		case *slack.MessageEvent:
 			go l.HandleMessage(ev)
 		case *slack.InvalidAuthEvent:
-			fmt.Printf("Invalid credentials")
-			return
+			log.Fatal("Invalid credentials")
 		case *slack.ReactionAddedEvent:
 			go l.HandleReaction(ev)
 		}
@@ -115,6 +123,8 @@ func NewLorebot(conf *Configuration) *Lorebot {
 	lorebot.Pg = NewPostgresClient(lorebot.Conf.PGHost, lorebot.Conf.PGPort,
 		lorebot.Conf.PGUser, lorebot.Conf.PGPassword, lorebot.Conf.PGDbname)
 	lorebot.SlackAPI = slack.New(lorebot.Conf.Token)
+	lorebot.SlackAPI.SetDebug(true)
+
 	lorebot.LorebotID = conf.BotID
 	lorebot.MessageQueue = make(chan Message, 1000)
 	return lorebot
