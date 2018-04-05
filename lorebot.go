@@ -69,38 +69,32 @@ func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 	userId := parseUserID(spl[0])
 	cmd := spl[1]
 	if userId == l.LorebotID {
+		var lores []Lore = nil
 		switch cmd {
 		case "help":
 			out := "Usage: @lorebot <help | recent | user <username> | search <query>>"
 			msg := &Message{ChannelID: channel, Content: out}
 			fmt.Println("Trying to write message: " + out)
 			l.MessageQueue <- *msg
+			return
 		case "recent":
-			out := ""
-			recent := l.Pg.RecentLore()
-			for _, lore := range recent {
-				out += "<@" + lore.UserID + ">" + ": " + lore.Message + "\n"
-			}
-			msg := &Message{ChannelID: channel, Content: out}
-			l.MessageQueue <- *msg
+			lores = l.Pg.RecentLore()
 		case "user":
 			if len(spl) != 3 {
 				return
 			}
 			parsedUser := parseUserID(spl[2])
-			out := ""
-			lores := l.Pg.LoreForUser(parsedUser)
-			for _, lore := range lores {
-				out += "<@" + lore.UserID + ">" + ": " + lore.Message + "\n"
-			}
-			msg := &Message{ChannelID: channel, Content: out}
-			l.MessageQueue <- *msg
+			lores = l.Pg.LoreForUser(parsedUser)
 		case "search":
 			if len(spl) < 3 {
 				return
 			}
 			query := strings.Join(spl[2:], " ")
-			lores := l.Pg.SearchLore(query)
+			lores = l.Pg.SearchLore(query)
+		}
+
+		// If we have some lores to share, send them to slack
+		if lores != nil {
 			out := ""
 			for _, lore := range lores {
 				out += "<@" + lore.UserID + ">" + ": " + lore.Message + "\n"
