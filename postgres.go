@@ -86,6 +86,32 @@ func (p *PostgresClient) LoreForUser(userId string) []Lore {
 	return ret
 }
 
+func (p *PostgresClient) SearchLore(query string) []Lore {
+	sqlStatement := `
+    SELECT user_id, message FROM lores WHERE message LIKE '%' || $1 || '%'`
+	rows, err := p.Db.Query(sqlStatement, query)
+	defer rows.Close()
+	if err != nil {
+		panic(err)
+	}
+	ret := make([]Lore, 0)
+	var (
+		userId  string
+		message string
+	)
+	for rows.Next() {
+		if err := rows.Scan(&userId, &message); err != nil {
+			log.Fatal(err)
+		}
+		lore := Lore{UserID: userId, Message: message}
+		ret = append(ret, lore)
+	}
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+	return ret
+}
+
 func (p *PostgresClient) LoreExists(message string, user_id string) bool {
 	sqlStatement := `
     SELECT COUNT(*) FROM lores WHERE message IN ($1) and user_id in ($2)`

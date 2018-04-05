@@ -69,10 +69,9 @@ func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 	userId := parseUserID(spl[0])
 	cmd := spl[1]
 	if userId == l.LorebotID {
-		// TODO: Parse commands + arguments
 		switch cmd {
 		case "help":
-			out := "Usage: @lorebot <help | recent | user <username>>"
+			out := "Usage: @lorebot <help | recent | user <username> | search <query>>"
 			msg := &Message{ChannelID: channel, Content: out}
 			fmt.Println("Trying to write message: " + out)
 			l.MessageQueue <- *msg
@@ -85,13 +84,24 @@ func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 			msg := &Message{ChannelID: channel, Content: out}
 			l.MessageQueue <- *msg
 		case "user":
-			// Make sure there are the right number of arguments
 			if len(spl) != 3 {
 				return
 			}
 			parsedUser := parseUserID(spl[2])
 			out := ""
 			lores := l.Pg.LoreForUser(parsedUser)
+			for _, lore := range lores {
+				out += "<@" + lore.UserID + ">" + ": " + lore.Message + "\n"
+			}
+			msg := &Message{ChannelID: channel, Content: out}
+			l.MessageQueue <- *msg
+		case "search":
+			if len(spl) < 3 {
+				return
+			}
+			query := strings.Join(spl[2:], " ")
+			lores := l.Pg.SearchLore(query)
+			out := ""
 			for _, lore := range lores {
 				out += "<@" + lore.UserID + ">" + ": " + lore.Message + "\n"
 			}
