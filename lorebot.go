@@ -48,8 +48,8 @@ func (l *Lorebot) HandleLoreReact(channelId string, timestamp string) {
 				return
 			}
 			l.Pg.InsertLore(message.User, message.Text)
-			params := slack.PostMessageParameters{Username: "Lorebot", IconEmoji: ":lore:"}
-			go l.SlackAPI.PostMessage(channelId, "Lore added: <@"+message.User+">: "+message.Text, params)
+			msg := &Message{ChannelID: channelId, Content: "Lore added: <@" + message.User + ">: " + message.Text}
+			l.MessageQueue <- *msg
 			return
 		}
 	}
