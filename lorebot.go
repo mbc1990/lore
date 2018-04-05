@@ -72,7 +72,7 @@ func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 		// TODO: Parse commands + arguments
 		switch cmd {
 		case "help":
-			out := "Usage: @lorebot <help | recent>"
+			out := "Usage: @lorebot <help | recent | user <username>>"
 			msg := &Message{ChannelID: channel, Content: out}
 			fmt.Println("Trying to write message: " + out)
 			l.MessageQueue <- *msg
@@ -84,8 +84,20 @@ func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 			}
 			msg := &Message{ChannelID: channel, Content: out}
 			l.MessageQueue <- *msg
+		case "user":
+			// Make sure there are the right number of arguments
+			if len(spl) != 3 {
+				return
+			}
+			parsedUser := parseUserID(spl[2])
+			out := ""
+			lores := l.Pg.LoreForUser(parsedUser)
+			for _, lore := range lores {
+				out += "<@" + lore.UserID + ">" + ": " + lore.Message + "\n"
+			}
+			msg := &Message{ChannelID: channel, Content: out}
+			l.MessageQueue <- *msg
 		}
-		// TODO: Default case looks up the argument as user id
 	}
 }
 
