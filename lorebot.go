@@ -38,7 +38,9 @@ func (l *Lorebot) HandleLoreReact(channelId string, timestamp string) {
 	for _, message := range history.Messages {
 		if message.Timestamp == timestamp {
 			if l.Pg.LoreExists(message.Text, message.User) {
-				// TODO: Upvote lore
+				l.Pg.UpvoteLore(message.User, message.Text)
+				msg := &Message{ChannelID: channelId, Content: "Lore upvoted: <@" + message.User + ">: " + message.Text}
+				l.MessageQueue <- *msg
 				return
 			}
 			fmt.Println("User: " + message.User + " + lore id: " + l.LorebotID)
@@ -118,7 +120,7 @@ func (l *Lorebot) Start() {
 
 	go l.MessageWorker()
 
-	// TODO: This is a race condition
+	// TODO: Is a race condition?
 	rtm := l.SlackAPI.NewRTM()
 	go rtm.ManageConnection()
 	for msg := range rtm.IncomingEvents {

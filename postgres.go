@@ -112,6 +112,17 @@ func (p *PostgresClient) SearchLore(query string) []Lore {
 	return ret
 }
 
+func (p *PostgresClient) UpvoteLore(userId string, message string) {
+	sqlStatement := `
+    UPDATE lores 
+       SET score = score + 1 
+     WHERE message IN ($1) and user_id in ($2)`
+	_, err := p.Db.Query(sqlStatement, message, userId)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func (p *PostgresClient) LoreExists(message string, user_id string) bool {
 	sqlStatement := `
     SELECT COUNT(*) FROM lores WHERE message IN ($1) and user_id in ($2)`
