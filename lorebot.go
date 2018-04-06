@@ -39,8 +39,8 @@ func (l *Lorebot) HandleLoreReact(channelId string, timestamp string) {
 		if message.Timestamp == timestamp {
 			if l.Pg.LoreExists(message.Text, message.User) {
 				l.Pg.UpvoteLore(message.User, message.Text)
-				msg := &Message{ChannelID: channelId, Content: "Lore upvoted: <@" + message.User + ">: " + message.Text}
-				l.MessageQueue <- *msg
+				msg := Message{ChannelID: channelId, Content: "Lore upvoted: <@" + message.User + ">: " + message.Text}
+				l.MessageQueue <- msg
 				return
 			}
 			fmt.Println("User: " + message.User + " + lore id: " + l.LorebotID)
@@ -50,8 +50,8 @@ func (l *Lorebot) HandleLoreReact(channelId string, timestamp string) {
 				return
 			}
 			l.Pg.InsertLore(message.User, message.Text)
-			msg := &Message{ChannelID: channelId, Content: "Lore added: <@" + message.User + ">: " + message.Text}
-			l.MessageQueue <- *msg
+			msg := Message{ChannelID: channelId, Content: "Lore added: <@" + message.User + ">: " + message.Text}
+			l.MessageQueue <- msg
 			return
 		}
 	}
@@ -66,9 +66,9 @@ func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 		switch cmd {
 		case "help":
 			out := "Usage: @lorebot <help | recent | user <username> | search <query>>"
-			msg := &Message{ChannelID: ev.Channel, Content: out}
+			msg := Message{ChannelID: ev.Channel, Content: out}
 			fmt.Println("Trying to write message: " + out)
-			l.MessageQueue <- *msg
+			l.MessageQueue <- msg
 			return
 		case "recent":
 			lores = l.Pg.RecentLore()
@@ -92,8 +92,8 @@ func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 			for _, lore := range lores {
 				out += "<@" + lore.UserID + ">" + ": " + lore.Message + "\n"
 			}
-			msg := &Message{ChannelID: ev.Channel, Content: out}
-			l.MessageQueue <- *msg
+			msg := Message{ChannelID: ev.Channel, Content: out}
+			l.MessageQueue <- msg
 		}
 	}
 }
