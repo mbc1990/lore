@@ -107,11 +107,7 @@ func (l *Lorebot) HandleReaction(ev *slack.ReactionAddedEvent) {
 }
 
 func (l *Lorebot) Start() {
-	fmt.Println("Starting...")
-
 	go l.MessageWorker()
-
-	// TODO: Is a race condition?
 	rtm := l.SlackAPI.NewRTM()
 	go rtm.ManageConnection()
 	for msg := range rtm.IncomingEvents {
