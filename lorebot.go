@@ -57,16 +57,7 @@ func (l *Lorebot) HandleLoreReact(channelId string, timestamp string) {
 	}
 }
 
-func parseUserID(unparsed string) string {
-	userId := strings.Replace(unparsed, "<", "", 1)
-	userId = strings.Replace(userId, ">", "", 1)
-	userId = strings.Replace(userId, "@", "", 1)
-	return userId
-}
-
 func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
-	fmt.Println("event: ", ev)
-	channel := ev.Channel
 	spl := strings.Split(ev.Text, " ")
 	userId := parseUserID(spl[0])
 	cmd := spl[1]
@@ -75,7 +66,7 @@ func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 		switch cmd {
 		case "help":
 			out := "Usage: @lorebot <help | recent | user <username> | search <query>>"
-			msg := &Message{ChannelID: channel, Content: out}
+			msg := &Message{ChannelID: ev.Channel, Content: out}
 			fmt.Println("Trying to write message: " + out)
 			l.MessageQueue <- *msg
 			return
@@ -101,7 +92,7 @@ func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 			for _, lore := range lores {
 				out += "<@" + lore.UserID + ">" + ": " + lore.Message + "\n"
 			}
-			msg := &Message{ChannelID: channel, Content: out}
+			msg := &Message{ChannelID: ev.Channel, Content: out}
 			l.MessageQueue <- *msg
 		}
 	}
@@ -133,6 +124,13 @@ func (l *Lorebot) Start() {
 			go l.HandleReaction(ev)
 		}
 	}
+}
+
+func parseUserID(unparsed string) string {
+	userId := strings.Replace(unparsed, "<", "", 1)
+	userId = strings.Replace(userId, ">", "", 1)
+	userId = strings.Replace(userId, "@", "", 1)
+	return userId
 }
 
 func NewLorebot(conf *Configuration) *Lorebot {
