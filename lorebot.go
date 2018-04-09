@@ -39,8 +39,6 @@ func (l *Lorebot) HandleLoreReact(channelId string, timestamp string) {
 		if message.Timestamp == timestamp {
 			if l.Pg.LoreExists(message.Text, message.User) {
 				l.Pg.UpvoteLore(message.User, message.Text)
-				msg := Message{ChannelID: channelId, Content: "Lore upvoted: <@" + message.User + ">: " + message.Text}
-				l.MessageQueue <- msg
 				return
 			}
 			fmt.Println("User: " + message.User + " + lore id: " + l.LorebotID)
