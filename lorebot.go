@@ -2,6 +2,7 @@ package main
 
 import "fmt"
 import "log"
+import "strconv"
 import "strings"
 import "github.com/nlopes/slack"
 
@@ -82,13 +83,15 @@ func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 			}
 			query := strings.Join(spl[2:], " ")
 			lores = l.Pg.SearchLore(query)
+		case "top":
+			lores = l.Pg.TopLore()
 		}
 
 		// If we have some lores to share, send them to slack
 		if lores != nil {
 			out := ""
 			for _, lore := range lores {
-				out += "<@" + lore.UserID + ">" + ": " + lore.Message + "\n"
+				out += "<@" + lore.UserID + ">" + ": " + lore.Message + " (" + strconv.Itoa(lore.Score) + ")" + "\n"
 			}
 			msg := Message{ChannelID: ev.Channel, Content: out}
 			l.MessageQueue <- msg

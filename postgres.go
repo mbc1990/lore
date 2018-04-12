@@ -32,11 +32,12 @@ func (p *PostgresClient) GetDB() *sql.DB {
 type Lore struct {
 	UserID  string
 	Message string
+	Score   int
 }
 
 func (p *PostgresClient) RecentLore() []Lore {
 	sqlStatement := `
-    SELECT user_id, message FROM lores ORDER BY timestamp_added DESC LIMIT 3`
+    SELECT user_id, message, score FROM lores ORDER BY timestamp_added DESC LIMIT 3`
 	rows, err := p.Db.Query(sqlStatement)
 	defer rows.Close()
 	if err != nil {
@@ -46,12 +47,41 @@ func (p *PostgresClient) RecentLore() []Lore {
 	var (
 		userId  string
 		message string
+		score   int
 	)
 	for rows.Next() {
-		if err := rows.Scan(&userId, &message); err != nil {
+		if err := rows.Scan(&userId, &message, &score); err != nil {
 			log.Fatal(err)
 		}
-		lore := Lore{UserID: userId, Message: message}
+		lore := Lore{UserID: userId, Message: message, Score: score}
+		ret = append(ret, lore)
+
+	}
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+	return ret
+}
+
+func (p *PostgresClient) TopLore() []Lore {
+	sqlStatement := `
+    SELECT user_id, message, score FROM lores ORDER BY score DESC LIMIT 3`
+	rows, err := p.Db.Query(sqlStatement)
+	defer rows.Close()
+	if err != nil {
+		panic(err)
+	}
+	ret := make([]Lore, 0)
+	var (
+		userId  string
+		message string
+		score   int
+	)
+	for rows.Next() {
+		if err := rows.Scan(&userId, &message, &score); err != nil {
+			log.Fatal(err)
+		}
+		lore := Lore{UserID: userId, Message: message, Score: score}
 		ret = append(ret, lore)
 
 	}
@@ -63,7 +93,7 @@ func (p *PostgresClient) RecentLore() []Lore {
 
 func (p *PostgresClient) LoreForUser(userId string) []Lore {
 	sqlStatement := `
-    SELECT message FROM lores WHERE user_id IN ($1)`
+    SELECT message, score FROM lores WHERE user_id IN ($1)`
 	rows, err := p.Db.Query(sqlStatement, userId)
 	defer rows.Close()
 	if err != nil {
@@ -72,12 +102,13 @@ func (p *PostgresClient) LoreForUser(userId string) []Lore {
 	ret := make([]Lore, 0)
 	var (
 		message string
+		score   int
 	)
 	for rows.Next() {
-		if err := rows.Scan(&message); err != nil {
+		if err := rows.Scan(&message, &score); err != nil {
 			log.Fatal(err)
 		}
-		lore := Lore{UserID: userId, Message: message}
+		lore := Lore{UserID: userId, Message: message, Score: score}
 		ret = append(ret, lore)
 	}
 	if err := rows.Err(); err != nil {
@@ -88,7 +119,7 @@ func (p *PostgresClient) LoreForUser(userId string) []Lore {
 
 func (p *PostgresClient) SearchLore(query string) []Lore {
 	sqlStatement := `
-    SELECT user_id, message FROM lores WHERE message LIKE '%' || $1 || '%'`
+    SELECT user_id, message, score FROM lores WHERE message LIKE '%' || $1 || '%'`
 	rows, err := p.Db.Query(sqlStatement, query)
 	defer rows.Close()
 	if err != nil {
@@ -98,12 +129,13 @@ func (p *PostgresClient) SearchLore(query string) []Lore {
 	var (
 		userId  string
 		message string
+		score   int
 	)
 	for rows.Next() {
-		if err := rows.Scan(&userId, &message); err != nil {
+		if err := rows.Scan(&userId, &message, &score); err != nil {
 			log.Fatal(err)
 		}
-		lore := Lore{UserID: userId, Message: message}
+		lore := Lore{UserID: userId, Message: message, Score: score}
 		ret = append(ret, lore)
 	}
 	if err := rows.Err(); err != nil {
