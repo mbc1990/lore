@@ -203,7 +203,7 @@ func (p *PostgresClient) InsertLore(user_id string, content string) {
 	sqlStatement := `  
   INSERT INTO lores (user_id, message, score)
   VALUES ($1, $2, $3)`
-	_, err := p.Db.Exec(sqlStatement, user_id, content, 0)
+	_, err := p.Db.Exec(sqlStatement, user_id, content, 1)
 	if err != nil {
 		panic(err)
 	}
