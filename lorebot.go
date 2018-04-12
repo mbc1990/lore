@@ -64,7 +64,7 @@ func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 		var lores []Lore = nil
 		switch cmd {
 		case "help":
-			out := "Usage: @lorebot <help | recent | user <username> | search <query>>"
+			out := "Usage: @lorebot <help | recent | search <query> | top | user <username>>"
 			msg := Message{ChannelID: ev.Channel, Content: out}
 			fmt.Println("Trying to write message: " + out)
 			l.MessageQueue <- msg
