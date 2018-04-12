@@ -63,6 +63,34 @@ func (p *PostgresClient) RecentLore() []Lore {
 	return ret
 }
 
+func (p *PostgresClient) RandomLore() []Lore {
+	sqlStatement := `
+    SELECT user_id, message, score FROM lores ORDER BY RANDOM() LIMIT 1`
+	rows, err := p.Db.Query(sqlStatement)
+	defer rows.Close()
+	if err != nil {
+		panic(err)
+	}
+	ret := make([]Lore, 0)
+	var (
+		userId  string
+		message string
+		score   int
+	)
+	for rows.Next() {
+		if err := rows.Scan(&userId, &message, &score); err != nil {
+			log.Fatal(err)
+		}
+		lore := Lore{UserID: userId, Message: message, Score: score}
+		ret = append(ret, lore)
+
+	}
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+	return ret
+}
+
 func (p *PostgresClient) TopLore() []Lore {
 	sqlStatement := `
     SELECT user_id, message, score FROM lores ORDER BY score DESC LIMIT 3`

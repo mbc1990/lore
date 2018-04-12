@@ -64,11 +64,13 @@ func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 		var lores []Lore = nil
 		switch cmd {
 		case "help":
-			out := "Usage: @lorebot <help | recent | search <query> | top | user <username>>"
+			out := "Usage: @lorebot <help | random | recent | search <query> | top | user <username>>"
 			msg := Message{ChannelID: ev.Channel, Content: out}
 			fmt.Println("Trying to write message: " + out)
 			l.MessageQueue <- msg
 			return
+		case "random":
+			lores = l.Pg.RandomLore()
 		case "recent":
 			lores = l.Pg.RecentLore()
 		case "user":
