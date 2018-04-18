@@ -209,14 +209,7 @@ func (p *PostgresClient) InsertLore(user_id string, content string) {
 	}
 }
 
-func NewPostgresClient(pgHost string, pgPort int, pgUser string,
-	pgPassword string, pgDbname string) *PostgresClient {
-	p := new(PostgresClient)
-	p.Host = pgHost
-	p.Port = pgPort
-	p.User = pgUser
-	p.Password = pgPassword
-	p.Dbname = pgDbname
+func NewPostgresClient(p *PostgresClient) *PostgresClient {
 	p.Db = p.GetDB()
 	p.Db.SetMaxOpenConns(50)
 	return p

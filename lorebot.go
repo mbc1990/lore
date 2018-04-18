@@ -1,13 +1,15 @@
 package main
 
-import "fmt"
-import "log"
-import "strconv"
-import "strings"
-import "github.com/nlopes/slack"
+import (
+	"fmt"
+	"log"
+	"strconv"
+	"strings"
+
+	"github.com/nlopes/slack"
+)
 
 type Lorebot struct {
-	Conf         *Configuration
 	Pg           *PostgresClient
 	SlackAPI     *slack.Client
 	LorebotID    string
@@ -133,14 +135,20 @@ func parseUserID(unparsed string) string {
 }
 
 func NewLorebot(conf *Configuration) *Lorebot {
-	lorebot := new(Lorebot)
-	lorebot.Conf = conf
-	lorebot.Pg = NewPostgresClient(lorebot.Conf.PGHost, lorebot.Conf.PGPort,
-		lorebot.Conf.PGUser, lorebot.Conf.PGPassword, lorebot.Conf.PGDbname)
-	lorebot.SlackAPI = slack.New(lorebot.Conf.Token)
+	var lorebot Lorebot
+	lorebot.Pg = NewPostgresClient(&PostgresClient{
+		Host:     conf.PGHost,
+		Port:     conf.PGPort,
+		User:     conf.PGUser,
+		Password: conf.PGPassword,
+		Dbname:   conf.PGDbname,
+	})
+
+	lorebot.SlackAPI = slack.New(conf.Token)
 	lorebot.SlackAPI.SetDebug(true)
 
 	lorebot.LorebotID = conf.BotID
 	lorebot.MessageQueue = make(chan Message, 1000)
-	return lorebot
+
+	return &lorebot
 }
