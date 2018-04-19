@@ -39,22 +39,19 @@ func (p *PostgresClient) RecentLore() []Lore {
 	sqlStatement := `
     SELECT user_id, message, score FROM lores ORDER BY timestamp_added DESC LIMIT 3`
 	rows, err := p.Db.Query(sqlStatement)
-	defer rows.Close()
 	if err != nil {
 		panic(err)
 	}
+	defer rows.Close()
+
 	ret := make([]Lore, 0)
-	var (
-		userId  string
-		message string
-		score   int
-	)
+
+	var l Lore
 	for rows.Next() {
-		if err := rows.Scan(&userId, &message, &score); err != nil {
+		if err := rows.Scan(&l.UserID, &l.Message, &l.Score); err != nil {
 			log.Fatal(err)
 		}
-		lore := Lore{UserID: userId, Message: message, Score: score}
-		ret = append(ret, lore)
+		ret = append(ret, l)
 
 	}
 	if err := rows.Err(); err != nil {
@@ -67,22 +64,19 @@ func (p *PostgresClient) RandomLore() []Lore {
 	sqlStatement := `
     SELECT user_id, message, score FROM lores ORDER BY RANDOM() LIMIT 1`
 	rows, err := p.Db.Query(sqlStatement)
-	defer rows.Close()
 	if err != nil {
 		panic(err)
 	}
+	defer rows.Close()
+
 	ret := make([]Lore, 0)
-	var (
-		userId  string
-		message string
-		score   int
-	)
+
+	var l Lore
 	for rows.Next() {
-		if err := rows.Scan(&userId, &message, &score); err != nil {
+		if err := rows.Scan(&l.UserID, &l.Message, &l.Score); err != nil {
 			log.Fatal(err)
 		}
-		lore := Lore{UserID: userId, Message: message, Score: score}
-		ret = append(ret, lore)
+		ret = append(ret, l)
 
 	}
 	if err := rows.Err(); err != nil {
@@ -95,22 +89,19 @@ func (p *PostgresClient) TopLore() []Lore {
 	sqlStatement := `
     SELECT user_id, message, score FROM lores ORDER BY score DESC LIMIT 3`
 	rows, err := p.Db.Query(sqlStatement)
-	defer rows.Close()
 	if err != nil {
 		panic(err)
 	}
+	defer rows.Close()
+
 	ret := make([]Lore, 0)
-	var (
-		userId  string
-		message string
-		score   int
-	)
+
+	var l Lore
 	for rows.Next() {
-		if err := rows.Scan(&userId, &message, &score); err != nil {
+		if err := rows.Scan(&l.UserID, &l.Message, &l.Score); err != nil {
 			log.Fatal(err)
 		}
-		lore := Lore{UserID: userId, Message: message, Score: score}
-		ret = append(ret, lore)
+		ret = append(ret, l)
 
 	}
 	if err := rows.Err(); err != nil {
@@ -123,21 +114,20 @@ func (p *PostgresClient) LoreForUser(userId string) []Lore {
 	sqlStatement := `
     SELECT message, score FROM lores WHERE user_id IN ($1)`
 	rows, err := p.Db.Query(sqlStatement, userId)
-	defer rows.Close()
 	if err != nil {
 		panic(err)
 	}
+	defer rows.Close()
+
 	ret := make([]Lore, 0)
-	var (
-		message string
-		score   int
-	)
+
+	var l Lore
 	for rows.Next() {
-		if err := rows.Scan(&message, &score); err != nil {
+		if err := rows.Scan(&l.UserID, &l.Score); err != nil {
 			log.Fatal(err)
 		}
-		lore := Lore{UserID: userId, Message: message, Score: score}
-		ret = append(ret, lore)
+		ret = append(ret, l)
+
 	}
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
@@ -149,22 +139,20 @@ func (p *PostgresClient) SearchLore(query string) []Lore {
 	sqlStatement := `
     SELECT user_id, message, score FROM lores WHERE message LIKE '%' || $1 || '%'`
 	rows, err := p.Db.Query(sqlStatement, query)
-	defer rows.Close()
 	if err != nil {
 		panic(err)
 	}
+	defer rows.Close()
+
 	ret := make([]Lore, 0)
-	var (
-		userId  string
-		message string
-		score   int
-	)
+
+	var l Lore
 	for rows.Next() {
-		if err := rows.Scan(&userId, &message, &score); err != nil {
+		if err := rows.Scan(&l.UserID, &l.Message, &l.Score); err != nil {
 			log.Fatal(err)
 		}
-		lore := Lore{UserID: userId, Message: message, Score: score}
-		ret = append(ret, lore)
+		ret = append(ret, l)
+
 	}
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
@@ -187,10 +175,11 @@ func (p *PostgresClient) LoreExists(message string, user_id string) bool {
 	sqlStatement := `
     SELECT COUNT(*) FROM lores WHERE message IN ($1) and user_id in ($2)`
 	rows, err := p.Db.Query(sqlStatement, message, user_id)
-	defer rows.Close()
 	if err != nil {
 		panic(err)
 	}
+	defer rows.Close()
+
 	rows.Next()
 	var count int
 	if err := rows.Scan(&count); err != nil {
