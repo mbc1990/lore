@@ -60,9 +60,9 @@ func (l *Lorebot) HandleLoreReact(channelId string, timestamp string) {
 
 func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 	spl := strings.Split(ev.Text, " ")
-	userId := parseUserID(spl[0])
+	userID := parseUserID(spl[0])
 	cmd := spl[1]
-	if userId == l.LorebotID {
+	if userID == l.LorebotID {
 		var lores []Lore = nil
 		switch cmd {
 		case "help":
@@ -95,7 +95,7 @@ func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 		if lores != nil {
 			out := ""
 			for _, lore := range lores {
-				out += "<@" + lore.UserID + ">" + ": " + lore.Message + " (" + strconv.Itoa(lore.Score) + ")" + "\n"
+				out += "<@" + lore.userID + ">" + ": " + lore.Message + " (" + strconv.Itoa(lore.Score) + ")" + "\n"
 			}
 			msg := Message{ChannelID: ev.Channel, Content: out}
 			l.MessageQueue <- msg
@@ -128,10 +128,10 @@ func (l *Lorebot) Start() {
 }
 
 func parseUserID(unparsed string) string {
-	userId := strings.Replace(unparsed, "<", "", 1)
-	userId = strings.Replace(userId, ">", "", 1)
-	userId = strings.Replace(userId, "@", "", 1)
-	return userId
+	userID := strings.Replace(unparsed, "<", "", 1)
+	userID = strings.Replace(userID, ">", "", 1)
+	userID = strings.Replace(userID, "@", "", 1)
+	return userID
 }
 
 func NewLorebot(conf *Configuration) *Lorebot {
