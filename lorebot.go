@@ -135,20 +135,13 @@ func parseUserID(unparsed string) string {
 }
 
 func NewLorebot(conf *Configuration) *Lorebot {
-	var lorebot Lorebot
-	lorebot.Pg = NewPostgresClient(&PostgresClient{
-		Host:     conf.PGHost,
-		Port:     conf.PGPort,
-		User:     conf.PGUser,
-		Password: conf.PGPassword,
-		Dbname:   conf.PGDbname,
-	})
+	bot := Lorebot{
+		Pg:           NewPostgresClient(conf),
+		SlackAPI:     slack.New(conf.Token),
+		LorebotID:    conf.BotID,
+		MessageQueue: make(chan Message, 1000),
+	}
+	bot.SlackAPI.SetDebug(true)
 
-	lorebot.SlackAPI = slack.New(conf.Token)
-	lorebot.SlackAPI.SetDebug(true)
-
-	lorebot.LorebotID = conf.BotID
-	lorebot.MessageQueue = make(chan Message, 1000)
-
-	return &lorebot
+	return &bot
 }

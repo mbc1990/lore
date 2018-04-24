@@ -11,13 +11,18 @@ type PostgresClient struct {
 	User     string
 	Password string
 	Dbname   string
-	DB       *sql.DB
+	*sql.DB
 }
 
-func (p *PostgresClient) GetDB() *sql.DB {
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-		"password=%s dbname=%s sslmode=disable",
-		p.Host, p.Port, p.User, p.Password, p.Dbname)
+type Lore struct {
+	userID  string
+	Message string
+	Score   int
+}
+
+func DB(c *Configuration) *sql.DB {
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		c.PGHost, c.PGPort, c.PGUser, c.PGPassword, c.PGDbname)
 	DB, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		panic(err)
@@ -29,18 +34,12 @@ func (p *PostgresClient) GetDB() *sql.DB {
 	return DB
 }
 
-type Lore struct {
-	userID  string
-	Message string
-	Score   int
-}
-
 func (p *PostgresClient) RecentLore() []Lore {
 	sqlStatement := `
 	SELECT user_id, message, score 
 	  FROM lores 
 	 ORDER BY timestamp_added DESC LIMIT 3`
-	rows, err := p.DB.Query(sqlStatement)
+	rows, err := p.Query(sqlStatement)
 	if err != nil {
 		panic(err)
 	}
@@ -67,7 +66,7 @@ func (p *PostgresClient) RandomLore() []Lore {
 	SELECT user_id, message, score 
 	  FROM lores 
 	 ORDER BY RANDOM() LIMIT 1`
-	rows, err := p.DB.Query(sqlStatement)
+	rows, err := p.Query(sqlStatement)
 	if err != nil {
 		panic(err)
 	}
@@ -94,7 +93,7 @@ func (p *PostgresClient) TopLore() []Lore {
 	SELECT user_id, message, score 
 	  FROM lores 
 	 ORDER BY score DESC LIMIT 3`
-	rows, err := p.DB.Query(sqlStatement)
+	rows, err := p.Query(sqlStatement)
 	if err != nil {
 		panic(err)
 	}
@@ -121,7 +120,7 @@ func (p *PostgresClient) LoreForUser(userID string) []Lore {
 	SELECT message, score 
 	  FROM lores 
 	 WHERE user_id IN ($1)`
-	rows, err := p.DB.Query(sqlStatement, userID)
+	rows, err := p.Query(sqlStatement, userID)
 	if err != nil {
 		panic(err)
 	}
@@ -148,7 +147,7 @@ func (p *PostgresClient) SearchLore(query string) []Lore {
 	SELECT user_id, message, score 
 	  FROM lores 
 	 WHERE message LIKE '%' || $1 || '%'`
-	rows, err := p.DB.Query(sqlStatement, query)
+	rows, err := p.Query(sqlStatement, query)
 	if err != nil {
 		panic(err)
 	}
@@ -175,7 +174,7 @@ func (p *PostgresClient) UpvoteLore(userID string, message string) {
     UPDATE lores 
        SET score = score + 1 
      WHERE message IN ($1) and user_id in ($2)`
-	_, err := p.DB.Query(sqlStatement, message, userID)
+	_, err := p.Query(sqlStatement, message, userID)
 	if err != nil {
 		panic(err)
 	}
@@ -186,7 +185,7 @@ func (p *PostgresClient) LoreExists(message string, user_id string) bool {
 	SELECT COUNT(*) 
 	  FROM lores 
 	 WHERE message IN ($1) and user_id in ($2)`
-	rows, err := p.DB.Query(sqlStatement, message, user_id)
+	rows, err := p.Query(sqlStatement, message, user_id)
 	if err != nil {
 		panic(err)
 	}
@@ -204,14 +203,22 @@ func (p *PostgresClient) InsertLore(user_id string, content string) {
 	sqlStatement := `  
 	INSERT INTO lores (user_id, message, score)
 	VALUES ($1, $2, $3)`
-	_, err := p.DB.Exec(sqlStatement, user_id, content, 0)
+	_, err := p.Exec(sqlStatement, user_id, content, 0)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func NewPostgresClient(p *PostgresClient) *PostgresClient {
-	p.DB = p.GetDB()
-	p.DB.SetMaxOpenConns(50)
-	return p
+func NewPostgresClient(c *Configuration) *PostgresClient {
+	client := PostgresClient{
+		Host:     c.PGHost,
+		Port:     c.PGPort,
+		User:     c.PGUser,
+		Password: c.PGPassword,
+		Dbname:   c.PGDbname,
+		DB:       DB(c),
+	}
+	client.DB.SetMaxOpenConns(50)
+
+	return &client
 }
