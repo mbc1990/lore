@@ -1,13 +1,15 @@
 package main
 
-import "fmt"
-import "log"
-import "strconv"
-import "strings"
-import "github.com/nlopes/slack"
+import (
+	"fmt"
+	"log"
+	"strconv"
+	"strings"
+
+	"github.com/nlopes/slack"
+)
 
 type Lorebot struct {
-	Conf         *Configuration
 	Pg           *PostgresClient
 	SlackAPI     *slack.Client
 	LorebotID    string
@@ -58,9 +60,9 @@ func (l *Lorebot) HandleLoreReact(channelId string, timestamp string) {
 
 func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 	spl := strings.Split(ev.Text, " ")
-	userId := parseUserID(spl[0])
+	userID := parseUserID(spl[0])
 	cmd := spl[1]
-	if userId == l.LorebotID {
+	if userID == l.LorebotID {
 		var lores []Lore = nil
 		switch cmd {
 		case "help":
@@ -93,7 +95,7 @@ func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 		if lores != nil {
 			out := ""
 			for _, lore := range lores {
-				out += "<@" + lore.UserID + ">" + ": " + lore.Message + " (" + strconv.Itoa(lore.Score) + ")" + "\n"
+				out += "<@" + lore.userID + ">" + ": " + lore.Message + " (" + strconv.Itoa(lore.Score) + ")" + "\n"
 			}
 			msg := Message{ChannelID: ev.Channel, Content: out}
 			l.MessageQueue <- msg
@@ -126,21 +128,20 @@ func (l *Lorebot) Start() {
 }
 
 func parseUserID(unparsed string) string {
-	userId := strings.Replace(unparsed, "<", "", 1)
-	userId = strings.Replace(userId, ">", "", 1)
-	userId = strings.Replace(userId, "@", "", 1)
-	return userId
+	userID := strings.Replace(unparsed, "<", "", 1)
+	userID = strings.Replace(userID, ">", "", 1)
+	userID = strings.Replace(userID, "@", "", 1)
+	return userID
 }
 
 func NewLorebot(conf *Configuration) *Lorebot {
-	lorebot := new(Lorebot)
-	lorebot.Conf = conf
-	lorebot.Pg = NewPostgresClient(lorebot.Conf.PGHost, lorebot.Conf.PGPort,
-		lorebot.Conf.PGUser, lorebot.Conf.PGPassword, lorebot.Conf.PGDbname)
-	lorebot.SlackAPI = slack.New(lorebot.Conf.Token)
-	lorebot.SlackAPI.SetDebug(true)
+	bot := Lorebot{
+		Pg:           NewPostgresClient(conf),
+		SlackAPI:     slack.New(conf.Token),
+		LorebotID:    conf.BotID,
+		MessageQueue: make(chan Message, 1000),
+	}
+	bot.SlackAPI.SetDebug(true)
 
-	lorebot.LorebotID = conf.BotID
-	lorebot.MessageQueue = make(chan Message, 1000)
-	return lorebot
+	return &bot
 }
