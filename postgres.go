@@ -36,8 +36,8 @@ func DB(c *Configuration) *sql.DB {
 
 func (p *PostgresClient) RecentLore() []Lore {
 	sqlStatement := `
-	SELECT user_id, message, score 
-	  FROM lores 
+	SELECT user_id, message, score
+	  FROM lores
 	 ORDER BY timestamp_added DESC LIMIT 3`
 	rows, err := p.Query(sqlStatement)
 	if err != nil {
@@ -63,8 +63,8 @@ func (p *PostgresClient) RecentLore() []Lore {
 
 func (p *PostgresClient) RandomLore() []Lore {
 	sqlStatement := `
-	SELECT user_id, message, score 
-	  FROM lores 
+	SELECT user_id, message, score
+	  FROM lores
 	 ORDER BY RANDOM() LIMIT 1`
 	rows, err := p.Query(sqlStatement)
 	if err != nil {
@@ -90,8 +90,8 @@ func (p *PostgresClient) RandomLore() []Lore {
 
 func (p *PostgresClient) TopLore() []Lore {
 	sqlStatement := `
-	SELECT user_id, message, score 
-	  FROM lores 
+	SELECT user_id, message, score
+	  FROM lores
 	 ORDER BY score DESC LIMIT 3`
 	rows, err := p.Query(sqlStatement)
 	if err != nil {
@@ -117,8 +117,8 @@ func (p *PostgresClient) TopLore() []Lore {
 
 func (p *PostgresClient) LoreForUser(userID string) []Lore {
 	sqlStatement := `
-	SELECT message, score 
-	  FROM lores 
+	SELECT message, score
+	  FROM lores
 	 WHERE user_id IN ($1)`
 	rows, err := p.Query(sqlStatement, userID)
 	if err != nil {
@@ -130,9 +130,10 @@ func (p *PostgresClient) LoreForUser(userID string) []Lore {
 
 	var l Lore
 	for rows.Next() {
-		if err := rows.Scan(&l.userID, &l.Score); err != nil {
+		if err := rows.Scan(&l.Message, &l.Score); err != nil {
 			log.Fatal(err)
 		}
+		l.userID = userID
 		ret = append(ret, l)
 
 	}
@@ -144,8 +145,8 @@ func (p *PostgresClient) LoreForUser(userID string) []Lore {
 
 func (p *PostgresClient) SearchLore(query string) []Lore {
 	sqlStatement := `
-	SELECT user_id, message, score 
-	  FROM lores 
+	SELECT user_id, message, score
+	  FROM lores
 	 WHERE message LIKE '%' || $1 || '%'`
 	rows, err := p.Query(sqlStatement, query)
 	if err != nil {
@@ -171,8 +172,8 @@ func (p *PostgresClient) SearchLore(query string) []Lore {
 
 func (p *PostgresClient) UpvoteLore(userID string, message string) {
 	sqlStatement := `
-    UPDATE lores 
-       SET score = score + 1 
+    UPDATE lores
+       SET score = score + 1
      WHERE message IN ($1) and user_id in ($2)`
 	_, err := p.Query(sqlStatement, message, userID)
 	if err != nil {
@@ -182,8 +183,8 @@ func (p *PostgresClient) UpvoteLore(userID string, message string) {
 
 func (p *PostgresClient) LoreExists(message string, user_id string) bool {
 	sqlStatement := `
-	SELECT COUNT(*) 
-	  FROM lores 
+	SELECT COUNT(*)
+	  FROM lores
 	 WHERE message IN ($1) and user_id in ($2)`
 	rows, err := p.Query(sqlStatement, message, user_id)
 	if err != nil {
@@ -200,7 +201,7 @@ func (p *PostgresClient) LoreExists(message string, user_id string) bool {
 }
 
 func (p *PostgresClient) InsertLore(user_id string, content string) {
-	sqlStatement := `  
+	sqlStatement := `
 	INSERT INTO lores (user_id, message, score)
 	VALUES ($1, $2, $3)`
 	_, err := p.Exec(sqlStatement, user_id, content, 0)
