@@ -60,9 +60,12 @@ func (l *Lorebot) HandleLoreReact(channelId string, timestamp string) {
 
 func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 	spl := strings.Split(ev.Text, " ")
+	if len(spl) < 2 {
+		return
+	}
 	userID := parseUserID(spl[0])
-	cmd := spl[1]
 	if userID == l.LorebotID {
+		cmd := spl[1]
 		var lores []Lore = nil
 		switch cmd {
 		case "help":
