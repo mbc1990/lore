@@ -24,6 +24,7 @@ type Message struct {
 func (l *Lorebot) MessageWorker() {
 	params := slack.PostMessageParameters{Username: "Lorebot", IconEmoji: ":lore:"}
 	for msg := range l.MessageQueue {
+		fmt.Println("Attempting to send message: " + msg.Content)
 		l.SlackAPI.PostMessage(msg.ChannelID, msg.Content, params)
 	}
 }
