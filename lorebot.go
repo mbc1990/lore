@@ -69,9 +69,24 @@ func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 		var lores []Lore = nil
 		switch cmd {
 		case "help":
-			out := "Usage: @lorebot <help | random | recent | search <query> | top | user <username>>"
+			out := "Usage: @lorebot <help | random | recent | search <query> | top | user <username>> | highscores"
 			msg := Message{ChannelID: ev.Channel, Content: out}
 			fmt.Println("Trying to write message: " + out)
+			l.MessageQueue <- msg
+			return
+		case "highscores":
+			// scores := l.Pg.Highscores()
+			out := "```"
+			out += "Most lored messages: \n"
+			out += "Most points: "
+			/*
+				for _, score := range scores {
+					// TODO: Build scores
+
+				}
+			*/
+			out += "```"
+			msg := Message{ChannelID: ev.Channel, Content: out}
 			l.MessageQueue <- msg
 			return
 		case "random":
