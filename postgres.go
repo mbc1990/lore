@@ -147,7 +147,7 @@ func (p *PostgresClient) SearchLore(query string) []Lore {
 	sqlStatement := `
 	SELECT user_id, message, score
 	  FROM lores
-	 WHERE message LIKE '%' || $1 || '%'`
+	 WHERE message ILIKE '%' || $1 || '%'`
 	rows, err := p.Query(sqlStatement, query)
 	if err != nil {
 		panic(err)
