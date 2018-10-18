@@ -50,16 +50,18 @@ func (l *Lorebot) HandleLoreReact(channelId string, timestamp string) {
 
 	message := history.Messages[0]
 
-	if l.Pg.LoreExists(message.Text, message.User) {
-		l.Pg.UpvoteLore(message.User, message.Text)
-		return
-	}
-	fmt.Println("User: " + message.User + " + lore id: " + l.LorebotID)
 	// Can't lore the lorebot
 	if message.User == "" {
 		fmt.Println("Ingoring self lore")
 		return
 	}
+
+	if l.Pg.LoreExists(message.Text, message.User) {
+		l.Pg.UpvoteLore(message.User, message.Text)
+		return
+	}
+	fmt.Println("User: " + message.User + " + lore id: " + l.LorebotID)
+
 	l.Pg.InsertLore(message.User, message.Text)
 	msg := Message{ChannelID: channelId, Content: "Lore added: <@" + message.User + ">: " + message.Text}
 	l.MessageQueue <- msg
