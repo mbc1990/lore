@@ -26,7 +26,7 @@ func (l *Lorebot) SendMessage(msg Message) {
 	fmt.Println("Attempting to send message: " + msg.Content)
 	_, _, err := l.SlackAPI.PostMessage(msg.ChannelID, msg.Content, params)
 	if err != nil {
-		fmt.Printf("failed to post message: %v", err)
+		fmt.Printf("failed to post message: %v\n", err)
 	}
 }
 
