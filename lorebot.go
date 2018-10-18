@@ -30,33 +30,40 @@ func (l *Lorebot) MessageWorker() {
 }
 
 // channel + timestamp is a UUID for slack.
-// So when someone lore reacts, we look up the channel history,
-// find the message with that timestamp, and store it
+// So when someone lore reacts, we look up the channel history at that timestamp
+// See: https://api.slack.com/methods/channels.history
 func (l *Lorebot) HandleLoreReact(channelId string, timestamp string) {
-	params := slack.NewHistoryParameters()
+	params := slack.HistoryParameters{
+		Latest:    timestamp,
+		Count:     1,
+		Inclusive: true,
+	}
 	history, err := l.SlackAPI.GetChannelHistory(channelId, params)
 	if err != nil {
-		fmt.Println("Error", err)
+		fmt.Printf("failed to get channel history: %v\n", err)
 		return
 	}
-	for _, message := range history.Messages {
-		if message.Timestamp == timestamp {
-			if l.Pg.LoreExists(message.Text, message.User) {
-				l.Pg.UpvoteLore(message.User, message.Text)
-				return
-			}
-			fmt.Println("User: " + message.User + " + lore id: " + l.LorebotID)
-			// Can't lore the lorebot
-			if message.User == "" {
-				fmt.Println("Ingoring self lore")
-				return
-			}
-			l.Pg.InsertLore(message.User, message.Text)
-			msg := Message{ChannelID: channelId, Content: "Lore added: <@" + message.User + ">: " + message.Text}
-			l.MessageQueue <- msg
-			return
-		}
+	if len(history.Messages) != 1 {
+		fmt.Printf("no message found in channel %s at time %s\n", channelId, timestamp)
+		return
 	}
+
+	message := history.Messages[0]
+
+	if l.Pg.LoreExists(message.Text, message.User) {
+		l.Pg.UpvoteLore(message.User, message.Text)
+		return
+	}
+	fmt.Println("User: " + message.User + " + lore id: " + l.LorebotID)
+	// Can't lore the lorebot
+	if message.User == "" {
+		fmt.Println("Ingoring self lore")
+		return
+	}
+	l.Pg.InsertLore(message.User, message.Text)
+	msg := Message{ChannelID: channelId, Content: "Lore added: <@" + message.User + ">: " + message.Text}
+	l.MessageQueue <- msg
+	return
 }
 
 func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
