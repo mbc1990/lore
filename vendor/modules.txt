@@ -1,0 +1,7 @@
+# github.com/gorilla/websocket v1.4.0
+github.com/gorilla/websocket
+# github.com/lib/pq v1.0.0
+github.com/lib/pq
+github.com/lib/pq/oid
+# github.com/nlopes/slack v0.3.0
+github.com/nlopes/slack
