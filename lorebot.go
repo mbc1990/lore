@@ -81,7 +81,7 @@ func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 		var lores []Lore = nil
 		switch cmd {
 		case "help":
-			out := "Usage: @lorebot <help | random | recent | search <query> | top | user <username>>"
+			out := "Usage: @lorebot <help | random | recent | search <query> | top | user <username>> | highscores"
 			msg := Message{ChannelID: ev.Channel, Content: out}
 			l.SendMessage(msg)
 			return
@@ -103,6 +103,14 @@ func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 			lores = l.Pg.SearchLore(query)
 		case "top":
 			lores = l.Pg.TopLore()
+		case "highscores":
+			highscores := l.Pg.Highscores()
+			out := ""
+			for _, highscore := range highscores {
+				out += "<@" + highscore.UserID + ">" + ": " + strconv.Itoa(highscore.Score) + "\n"
+			}
+			msg := Message{ChannelID: ev.Channel, Content: out}
+			l.SendMessage(msg)
 		}
 
 		// If we have some lores to share, send them to slack

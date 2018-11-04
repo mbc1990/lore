@@ -20,6 +20,11 @@ type Lore struct {
 	Score   int
 }
 
+type Highscore struct {
+	UserID string
+	Score  int
+}
+
 func DB(c *Configuration) *sql.DB {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		c.PGHost, c.PGPort, c.PGUser, c.PGPassword, c.PGDbname)
@@ -163,6 +168,34 @@ func (p *PostgresClient) SearchLore(query string) []Lore {
 		}
 		ret = append(ret, l)
 
+	}
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+	return ret
+}
+
+func (p *PostgresClient) Highscores() []Highscore {
+	sqlStatement := `
+	SELECT user_id, SUM(score) AS highscore
+	  FROM lores
+      GROUP BY user_id
+      ORDER BY highscore DESC;
+	`
+	rows, err := p.Query(sqlStatement)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	ret := make([]Highscore, 0)
+
+	var h Highscore
+	for rows.Next() {
+		if err := rows.Scan(&h.UserID, &h.Score); err != nil {
+			log.Fatal(err)
+		}
+		ret = append(ret, h)
 	}
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
