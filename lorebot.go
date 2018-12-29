@@ -81,7 +81,7 @@ func (l *Lorebot) HandleMessage(ev *slack.MessageEvent) {
 		var lores []Lore = nil
 		switch cmd {
 		case "help":
-			out := "Usage: @lorebot <help | random | recent | search <query> | top | user <username>> | highscores"
+			out := "Usage: @lorebot <help | random | recent | search <query> | top | user <username> | highscores>"
 			msg := Message{ChannelID: ev.Channel, Content: out}
 			l.SendMessage(msg)
 			return
